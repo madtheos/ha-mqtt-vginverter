@@ -1,0 +1,15 @@
+[Unit]
+Description=Bluetooth Monitor and MQTT Service for VGInverter Home UPS 
+After=network.target
+
+[Service]
+WorkingDirectory=/home/matt/apps/vginverter
+ExecStart=/usr/bin/python3 /home/matt/apps/vginverter/vginverter.py
+EnvironmentFile=/home/matt/apps/vginverter/vginverter.env
+Restart=always
+RestartSec=10
+User=matt
+Group=matt
+
+[Install]
+WantedBy=multi-user.target
