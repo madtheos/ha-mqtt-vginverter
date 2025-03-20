@@ -21,3 +21,6 @@ To install on a Raspberry Pi/Pi Zero W:
 
    **sudo systemctl daemon-reload**    
    **sudo systemctl enable --now vginverter.service**
+
+## License
+GNU GPL V3 or later. 
