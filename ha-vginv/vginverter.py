@@ -27,6 +27,7 @@ import os
 
     Changelog:
     1.0: Initial release
+    1.1: Initial release was broken, mqtt port fix
 
 """
 
@@ -36,7 +37,7 @@ WRITE_UUID = "0003cdd2-0000-1000-8000-00805f9b0131"
 NOTIFY_UUID = "0003cdd1-0000-1000-8000-00805f9b0131"
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")  # Edit vginverter.env file 
-MQTT_PORT = os.getenv("MQTT_PORT", "1883")
+MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
 MQTT_TOPIC_PREFIX = "home/ups"
