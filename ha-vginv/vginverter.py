@@ -32,7 +32,7 @@ import os
 """
 
 # === CONFIGURATION ===
-UPS_ADDRESS = os.getenv("UPS_ADDRESS", "")  # Replace in vginverter.env file 
+UPS_ADDRESS = os.getenv("UPS_ADDRESS")  # Replace in vginverter.env file 
 WRITE_UUID = "0003cdd2-0000-1000-8000-00805f9b0131"
 NOTIFY_UUID = "0003cdd1-0000-1000-8000-00805f9b0131"
 
@@ -154,7 +154,7 @@ async def poll_ups():
                     name = sensor_requests[prefix]["name"]
                     #print(f"📤 Requesting {name}...")
                     await client.write_gatt_char(WRITE_UUID, request)
-                    await asyncio.sleep(0.5)  # wait between requests
+                    #await asyncio.sleep(0.5)  # wait between requests
 
                 await asyncio.sleep(2.0)  # give time for notifications
                 await client.stop_notify(NOTIFY_UUID)
