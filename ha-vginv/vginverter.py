@@ -28,6 +28,7 @@ import os
     Changelog:
     1.0: Initial release
     1.1: Initial release was broken, mqtt port fix
+    1.2: Round battery level value before sending
 
 """
 
@@ -77,7 +78,7 @@ sensor_requests = {
     },
     bytes.fromhex("FFFFFF3C0C01"): {
         "name": "Battery Charge Level",
-        "divisor": 300,  # 300 means 100% is reported as 30000
+        "divisor": 297,  # 300 means 100% is reported as 30000
         "unit": "%",
         "device_class": "battery"
     }
@@ -133,7 +134,7 @@ def notification_handler(sender, data):
         name = info["name"]
         divisor = info["divisor"]
         value = int.from_bytes(value_bytes, "little") / divisor
-        received_data[name] = value
+        received_data[name] = round(value, 2)
         #print(f"📡 {name}: {value:.2f}")
     else:
         print(f"❓ Unknown data: {data.hex()}")
