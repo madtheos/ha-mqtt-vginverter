@@ -100,7 +100,7 @@ def publish_discovery_configs():
 
     device_info = {
         "identifiers": ["home-ups"],
-        "name": "Home UPS",
+        "name": "VGInverter",
         "manufacturer": "V-Guard",
         "model": "SOLSMART 1450"
     }
@@ -138,7 +138,7 @@ def publish_discovery_configs():
     }
 
     mqtt_client.publish("homeassistant/binary_sensor/home_ups_status/config", json.dumps(status_payload), retain=True)
-
+    print(f"✅ Discovery config sent for: UPS Availability")
 
 def notification_handler(sender, data):
     prefix = bytes(data[:6])
