@@ -29,6 +29,8 @@ import os
     1.0: Initial release
     1.1: Initial release was broken, mqtt port fix
     1.2: Round battery level value before sending
+    1.3: Revamped poll_ups()
+    1.4: Added UPS offline mqtt topic 
 
 """
 
@@ -43,6 +45,7 @@ MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
 MQTT_TOPIC_PREFIX = "home/ups"
 POLL_INTERVAL = 20  # seconds
+AVAILABILITY_TOPIC = f"{MQTT_TOPIC_PREFIX}/status"
 
 # === SENSOR DEFINITIONS ===
 sensor_requests = {
@@ -123,6 +126,18 @@ def publish_discovery_configs():
 
         mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True)
         print(f"✅ Discovery config sent for: {name}")
+        
+    status_payload = {
+        "name": "UPS Availability",
+        "state_topic": AVAILABILITY_TOPIC,
+        "payload_on": "online",
+        "payload_off": "offline",
+        "device_class": "connectivity",
+        "unique_id": "home_ups_status",
+        "device": device_info
+    }
+
+    mqtt_client.publish("homeassistant/binary_sensor/home_ups_status/config", json.dumps(status_payload), retain=True)
 
 
 def notification_handler(sender, data):
@@ -153,6 +168,9 @@ async def poll_ups():
                 if not client.is_connected:
                     print("❌ Failed to connect to UPS.")
                     raise RuntimeError("Could not connect to UPS")
+                
+                mqtt_client.publish(AVAILABILITY_TOPIC, "online", retain=True)
+                print("✅ Published UPS availability: online")
 
                 await client.start_notify(NOTIFY_UUID, notification_handler)
 
@@ -181,6 +199,8 @@ async def poll_ups():
 
         except Exception as e:
             print(f"⚠️ Error during polling: {e}")
+            mqtt_client.publish(AVAILABILITY_TOPIC, "offline", retain=True)
+            print("✅ Published UPS availability: offline")
             print("⏳ Waiting 10s before retrying...")
             await asyncio.sleep(10)
 
