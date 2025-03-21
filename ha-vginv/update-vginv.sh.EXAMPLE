@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd ~/ha-mqtt-vginverter/ha-vginv
+git pull
+sudo systemctl restart vginverter.service
+
+
