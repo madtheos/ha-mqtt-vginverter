@@ -1,11 +1,15 @@
 # HA-VGINV
 
-This script reads the VGInverter/SolSmart 1450 (possibly others) over Bluetooth 
+This script reads status information from the VGInverter/SolSmart 1450 (possibly others) over Bluetooth, 
 and sends the data to Home Assistant over MQTT. 
+
+Information such as battery level, load percentage, charge/discharge current, mains voltage, etc. 
 
 ## Caveat: 
 
-On the VGuard Solsmart 1450 this was tested on, there is a bug in the inverter that causes the "smart" features to crash in a day or two. No vital functions are disrupted by this, only the ESP32 in the device seems to be crashing, not the main controller. 
+On the VGuard Solsmart 1450 this was tested on, there is a bug in the inverter that causes the "smart" features to crash in a day or two. 
+
+No vital functions are disrupted by this, only the ESP32 in the device seems to be crashing, not the main controller. 
 
 I was able to restore function only by disconnecting and reconnecting the storage battery. It seems this script is not practical until VGuard fixes the bug and updates the firmware. Which is likely never. YMMV. 
 
