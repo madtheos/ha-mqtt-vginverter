@@ -24,12 +24,16 @@ To install on a Raspberry Pi/Pi Zero W:
 sudo apt install python3 python3-bleak python3-paho-mqtt
 ```
 
-1. Clone repo.
+2. Clone repo.
 ```bash
 git clone https://github.com/madtheos/ha-mqtt-vginverter.git
 ```
 
-3. Edit the example files with your data. You might need to use the OEM app or a Bluetooth scanner to find the MAC address of your inverter/ups. 
+3. Find the MAC address of your inverter/ups using the OEM app or a Bluetooth scanner app such as nRF Connect. 
+
+4. - Add the MAC address directly to the script and then run it directly, skipping the rest of the steps. 
+   - OR
+   - Edit the example files for the systemd service with your data. 
 
 5. Copy the service file to something like **/etc/systemd/system/vginverter.service**
    
