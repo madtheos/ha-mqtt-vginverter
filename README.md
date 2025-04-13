@@ -13,6 +13,8 @@ No vital functions are disrupted by this, only the ESP32 in the device seems to 
 
 I was able to restore function only by disconnecting and reconnecting the storage battery. It seems this script is not practical until VGuard fixes the bug and updates the firmware. Which is likely never. YMMV. 
 
+On the other hand, you can crash SolSmart inverters without physical access if you bring a bluetooth-capable device near them running this script or a phone app making constant bluetooth LE requests. 
+
 ## Installation:
 
 To install on a Raspberry Pi/Pi Zero W:
