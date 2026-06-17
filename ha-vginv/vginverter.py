@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from bleak import BleakClient
 import paho.mqtt.client as mqtt
 import time
@@ -33,6 +34,26 @@ import os
     1.4: Added UPS offline mqtt topic 
 
 """
+
+
+def load_env_file():
+    env_file = Path(__file__).with_name("vginverter.env")
+    if not env_file.is_file():
+        return
+
+    with env_file.open("r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            os.environ.setdefault(key, value)
+
+
+load_env_file()
 
 # === CONFIGURATION ===
 UPS_ADDRESS = os.getenv("UPS_ADDRESS")  # Replace in vginverter.env file 
