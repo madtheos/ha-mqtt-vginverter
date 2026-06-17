@@ -234,7 +234,10 @@ def main():
     try:
         mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
     except Exception as e:
-        print(f"❌ Initial MQTT connect failed: {e}")
+        print(
+            f"❌ Initial MQTT connect failed for broker {MQTT_BROKER}:{MQTT_PORT} "
+            f"(user: {MQTT_USERNAME}): {e}"
+        )
         return
 
     mqtt_client.loop_start()  # run MQTT network loop in background
