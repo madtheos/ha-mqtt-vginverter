@@ -155,50 +155,53 @@ def notification_handler(sender, data):
         print(f"❓ Unknown data: {data.hex()}")
 
 async def poll_ups():
+    client = BleakClient(UPS_ADDRESS)
+
     while True:
         try:
             print(f"\n🔄 Polling UPS at {time.strftime('%H:%M:%S')}...")
 
-            client = BleakClient(UPS_ADDRESS)
-
-            try:
+            if not client.is_connected:
                 print("🔌 Connecting to UPS...")
                 await client.connect()
 
                 if not client.is_connected:
                     print("❌ Failed to connect to UPS.")
                     raise RuntimeError("Could not connect to UPS")
-                
+
                 mqtt_client.publish(AVAILABILITY_TOPIC, "online", retain=True)
                 print("✅ Published UPS availability: online")
 
                 await client.start_notify(NOTIFY_UUID, notification_handler)
+                print("✅ BLE notifications enabled")
 
-                received_data.clear()
+            received_data.clear()
 
-                for prefix, request in full_requests.items():
-                    name = sensor_requests[prefix]["name"]
-                    print(f"📤 Requesting {name}...")
-                    await client.write_gatt_char(WRITE_UUID, request)
-                    await asyncio.sleep(0.5)
+            for prefix, request in full_requests.items():
+                name = sensor_requests[prefix]["name"]
+                print(f"📤 Requesting {name}...")
+                await client.write_gatt_char(WRITE_UUID, request)
+                await asyncio.sleep(0.25)
 
-                await asyncio.sleep(2.0)  # Wait for all notifications
+            await asyncio.sleep(2.0)  # Wait for all notifications
 
-                await client.stop_notify(NOTIFY_UUID)
-
-                # Publish all received values to MQTT
-                for name, value in received_data.items():
-                    topic = f"{MQTT_TOPIC_PREFIX}/{name.replace(' ', '_').lower()}"
-                    mqtt_client.publish(topic, value)
-                    print(f"📤 MQTT: {topic} = {value}")
-
-            finally:
-                if client.is_connected:
-                    print("🔌 Disconnecting from UPS...")
-                    await client.disconnect()
+            # Publish all received values to MQTT
+            for name, value in received_data.items():
+                topic = f"{MQTT_TOPIC_PREFIX}/{name.replace(' ', '_').lower()}"
+                mqtt_client.publish(topic, value)
+                print(f"📤 MQTT: {topic} = {value}")
 
         except Exception as e:
             print(f"⚠️ Error during polling: {e}")
+
+            try:
+                if client.is_connected:
+                    await client.stop_notify(NOTIFY_UUID)
+                    await client.disconnect()
+                    print("🔌 Disconnected from UPS after error")
+            except Exception:
+                pass
+
             mqtt_client.publish(AVAILABILITY_TOPIC, "offline", retain=True)
             print("✅ Published UPS availability: offline")
             print("⏳ Waiting 10s before retrying...")
