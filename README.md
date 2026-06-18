@@ -15,6 +15,10 @@ I was able to restore function only by disconnecting and reconnecting the storag
 
 On the other hand, you can crash SolSmart inverters without physical access if you bring a bluetooth-capable device near them running this script or a phone app making constant bluetooth LE requests. 
 
+### Update:
+
+A ChatGPT review of the code suggested that keeping the BLE connection open may avoid triggering memory leaks that lead to the crash, which we shall see. 
+
 ## Installation:
 
 To install on a Raspberry Pi/Pi Zero W:

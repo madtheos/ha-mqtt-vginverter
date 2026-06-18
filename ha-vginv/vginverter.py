@@ -32,6 +32,7 @@ import os
     1.2: Round battery level value before sending
     1.3: Revamped poll_ups()
     1.4: Added UPS offline mqtt topic 
+    1.5: Keep the BLE connection open to prevent inverter ESP32 crash
 
 """
 
@@ -65,7 +66,7 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
 MQTT_TOPIC_PREFIX = "home/ups"
-POLL_INTERVAL = 20  # seconds
+POLL_INTERVAL = 15  # seconds
 AVAILABILITY_TOPIC = f"{MQTT_TOPIC_PREFIX}/status"
 
 # === SENSOR DEFINITIONS ===
