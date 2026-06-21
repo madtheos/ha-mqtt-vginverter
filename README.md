@@ -1,19 +1,15 @@
-# HA-VGINV
+# HA-VGINV Crashy Edition
+
+This is the initial version of this script that crashes the smart parts of the inverter. The difference is that this version disconnects and reconnects every time it needs to poll, which apparently causes a memory leak in the ESP32 inside and causes it to go offline in a day or two. No vital functions are disrupted by this, as only the ESP32 seems to be crashing, not the main controller. 
+
+I was able to restore function only by disconnecting and reconnecting the storage battery.
+
+On the other hand, you can crash SolSmart inverters without physical access if you bring a bluetooth-capable device near them running this script or a phone app making constant bluetooth LE requests. Don't do this. 
+
+Original description: 
 
 This script reads status information from the VGInverter/SolSmart 1450 (possibly others) over Bluetooth, 
-and sends the data to Home Assistant over MQTT. 
-
-Information such as battery level, load percentage, charge/discharge current, mains voltage, etc. 
-
-## Caveat: 
-
-On the VGuard Solsmart 1450 this was tested on, there is a bug in the inverter that causes the "smart" features to crash in a day or two. 
-
-No vital functions are disrupted by this, only the ESP32 in the device seems to be crashing, not the main controller. 
-
-I was able to restore function only by disconnecting and reconnecting the storage battery. It seems this script is not practical until VGuard fixes the bug and updates the firmware. Which is likely never. YMMV. 
-
-On the other hand, you can crash SolSmart inverters without physical access if you bring a bluetooth-capable device near them running this script or a phone app making constant bluetooth LE requests. 
+and sends the data to Home Assistant over MQTT. Information such as battery level, load percentage, charge/discharge current, mains voltage, etc. 
 
 ## Installation:
 
