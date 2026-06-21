@@ -1,19 +1,9 @@
 # HA-VGINV
 
-This script reads status information from the VGInverter/SolSmart 1450 (possibly others) over Bluetooth, 
+This script reads status information from the V-Guard SolSmart 1450 (possibly others) over Bluetooth LE, 
 and sends the data to Home Assistant over MQTT. 
 
-Information such as battery level, load percentage, charge/discharge current, mains voltage, etc. 
-
-## Caveat: 
-
-On the VGuard Solsmart 1450 this was tested on, there is a bug in the inverter that causes the "smart" features to crash in a day or two. 
-
-No vital functions are disrupted by this, only the ESP32 in the device seems to be crashing, not the main controller. 
-
-I was able to restore function only by disconnecting and reconnecting the storage battery. It seems this script is not practical until VGuard fixes the bug and updates the firmware. Which is likely never. YMMV. 
-
-On the other hand, you can crash SolSmart inverters without physical access if you bring a bluetooth-capable device near them running this script or a phone app making constant bluetooth LE requests. 
+Information includes battery level, load percentage, charge/discharge current, mains voltage, etc. 
 
 ## Installation:
 
@@ -42,7 +32,19 @@ git clone https://github.com/madtheos/ha-mqtt-vginverter.git
 sudo systemctl daemon-reload 
 sudo systemctl enable --now vginverter.service
 ```
+
+## Firmware Bug and Crashes: 
+
+An earlier version of this script opened and closed a BLE connection each time, and this caused the "smart" features to crash within a day or two. Likely because of a memory leak. This was tested on the VGuard Solsmart 1450. 
+
+No vital functions are disrupted by this, as only the ESP32 inside the inverter crashes, not the main controller. 
+
+I was able to restore function only by disconnecting and reconnecting the storage battery.
+
+On the other hand, you can crash affected SolSmart inverters without physical access if you bring a bluetooth-capable device near them running that version of the script or perhaps a phone app making constant bluetooth LE connections. Don't do this. 
+
 ## License
+
 Copyright 2025 Mathews Sunny
 
 Licensed under GNU GPL V3 or later. 

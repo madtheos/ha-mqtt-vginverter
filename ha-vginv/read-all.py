@@ -52,25 +52,25 @@ def notification_handler(sender, data):
         value = raw_value / divisor
         print(f"{value:.0f}")
     else:
-        print(f"❓ Unknown response: {data.hex()}")
+        print(f"Unknown response: {data.hex()}")
 
 async def main():
     async with BleakClient(UPS_ADDRESS) as client:
-        if not client.is_connected:  # ✅ No longer a coroutine!
-            print("❌ Not connected.")
+        if not client.is_connected:  # No longer a coroutine!
+            print("Not connected.")
             return
 
-        #print("✅ Connected...")
+        #print("Connected...")
         await client.start_notify(NOTIFY_UUID, notification_handler)
 
         for prefix, request in full_requests.items():
             name = sensor_requests[prefix][0]
-            #print(f"📤 Requesting {name}...")
+            #print(f"Requesting {name}...")
             await client.write_gatt_char(WRITE_UUID, request)
             await asyncio.sleep(0.5)  # Short pause between writes
 
         await asyncio.sleep(2.0)  # Allow time for all responses
         await client.stop_notify(NOTIFY_UUID)
-        #print("✅ Done.")
+        #print("Done.")
 
 asyncio.run(main())

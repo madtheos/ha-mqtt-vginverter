@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from bleak import BleakClient
 import paho.mqtt.client as mqtt
 import time
@@ -31,8 +32,29 @@ import os
     1.2: Round battery level value before sending
     1.3: Revamped poll_ups()
     1.4: Added UPS offline mqtt topic 
+    1.5: Keep the BLE connection open to prevent inverter ESP32 crash
 
 """
+
+
+def load_env_file():
+    env_file = Path(__file__).with_name("vginverter.env")
+    if not env_file.is_file():
+        return
+
+    with env_file.open("r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            os.environ.setdefault(key, value)
+
+
+load_env_file()
 
 # === CONFIGURATION ===
 UPS_ADDRESS = os.getenv("UPS_ADDRESS")  # Replace in vginverter.env file 
@@ -44,7 +66,7 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
 MQTT_TOPIC_PREFIX = "home/ups"
-POLL_INTERVAL = 20  # seconds
+POLL_INTERVAL = 15  # seconds
 AVAILABILITY_TOPIC = f"{MQTT_TOPIC_PREFIX}/status"
 
 # === SENSOR DEFINITIONS ===
@@ -96,7 +118,7 @@ received_data = {}
 mqtt_client = mqtt.Client()
 
 def publish_discovery_configs():
-    print("📡 Publishing MQTT discovery configs...")
+    print("Publishing MQTT discovery configs...")
 
     device_info = {
         "identifiers": ["home-ups"],
@@ -125,7 +147,7 @@ def publish_discovery_configs():
         }
 
         mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True)
-        print(f"✅ Discovery config sent for: {name}")
+        print(f"Discovery config sent for: {name}")
         
     status_payload = {
         "name": "UPS Availability",
@@ -138,7 +160,7 @@ def publish_discovery_configs():
     }
 
     mqtt_client.publish("homeassistant/binary_sensor/home_ups_status/config", json.dumps(status_payload), retain=True)
-    print(f"✅ Discovery config sent for: UPS Availability")
+    print(f"Discovery config sent for: UPS Availability")
 
 def notification_handler(sender, data):
     prefix = bytes(data[:6])
@@ -150,57 +172,60 @@ def notification_handler(sender, data):
         divisor = info["divisor"]
         value = int.from_bytes(value_bytes, "little") / divisor
         received_data[name] = round(value, 2)
-        #print(f"📡 {name}: {value:.2f}")
+        #print(f"{name}: {value:.2f}")
     else:
-        print(f"❓ Unknown data: {data.hex()}")
+        print(f"Unknown data: {data.hex()}")
 
 async def poll_ups():
+    client = BleakClient(UPS_ADDRESS)
+
     while True:
         try:
-            print(f"\n🔄 Polling UPS at {time.strftime('%H:%M:%S')}...")
+            print(f"\nPolling UPS at {time.strftime('%H:%M:%S')}...")
 
-            client = BleakClient(UPS_ADDRESS)
-
-            try:
-                print("🔌 Connecting to UPS...")
+            if not client.is_connected:
+                print("Connecting to UPS...")
                 await client.connect()
 
                 if not client.is_connected:
                     print("❌ Failed to connect to UPS.")
                     raise RuntimeError("Could not connect to UPS")
-                
+
                 mqtt_client.publish(AVAILABILITY_TOPIC, "online", retain=True)
-                print("✅ Published UPS availability: online")
+                print("Published UPS availability: online")
 
                 await client.start_notify(NOTIFY_UUID, notification_handler)
+                print("BLE notifications enabled")
 
-                received_data.clear()
+            received_data.clear()
 
-                for prefix, request in full_requests.items():
-                    name = sensor_requests[prefix]["name"]
-                    print(f"📤 Requesting {name}...")
-                    await client.write_gatt_char(WRITE_UUID, request)
-                    await asyncio.sleep(0.5)
+            for prefix, request in full_requests.items():
+                name = sensor_requests[prefix]["name"]
+                print(f"Requesting {name}...")
+                await client.write_gatt_char(WRITE_UUID, request)
+                await asyncio.sleep(0.25)
 
-                await asyncio.sleep(2.0)  # Wait for all notifications
+            await asyncio.sleep(2.0)  # Wait for all notifications
 
-                await client.stop_notify(NOTIFY_UUID)
-
-                # Publish all received values to MQTT
-                for name, value in received_data.items():
-                    topic = f"{MQTT_TOPIC_PREFIX}/{name.replace(' ', '_').lower()}"
-                    mqtt_client.publish(topic, value)
-                    print(f"📤 MQTT: {topic} = {value}")
-
-            finally:
-                if client.is_connected:
-                    print("🔌 Disconnecting from UPS...")
-                    await client.disconnect()
+            # Publish all received values to MQTT
+            for name, value in received_data.items():
+                topic = f"{MQTT_TOPIC_PREFIX}/{name.replace(' ', '_').lower()}"
+                mqtt_client.publish(topic, value)
+                print(f"MQTT: {topic} = {value}")
 
         except Exception as e:
-            print(f"⚠️ Error during polling: {e}")
+            print(f"❌ Error during polling: {e}")
+
+            try:
+                if client.is_connected:
+                    await client.stop_notify(NOTIFY_UUID)
+                    await client.disconnect()
+                    print("❌ Disconnected from UPS after error")
+            except Exception:
+                pass
+
             mqtt_client.publish(AVAILABILITY_TOPIC, "offline", retain=True)
-            print("✅ Published UPS availability: offline")
+            print("Published UPS availability: offline")
             print("⏳ Waiting 10s before retrying...")
             await asyncio.sleep(10)
 
@@ -212,13 +237,13 @@ def main():
 
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
-            print("✅ Connected to MQTT broker")
-            publish_discovery_configs()  # 👈 send discovery when connected
+            print("Connected to MQTT broker")
+            publish_discovery_configs()  # send discovery when connected
         else:
             print(f"❌ MQTT connection failed with code {rc}")
 
     def on_disconnect(client, userdata, rc):
-        print("⚠️ MQTT disconnected. Reconnecting in 5 seconds...")
+        print("❌ MQTT disconnected. Reconnecting in 5 seconds...")
         time.sleep(5)
         try:
             client.reconnect()
@@ -231,11 +256,14 @@ def main():
     try:
         mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
     except Exception as e:
-        print(f"❌ Initial MQTT connect failed: {e}")
+        print(
+            f"❌ Initial MQTT connect failed for broker {MQTT_BROKER}:{MQTT_PORT} "
+            f"(user: {MQTT_USERNAME}): {e}"
+        )
         return
 
     mqtt_client.loop_start()  # run MQTT network loop in background
-    print(f"🚀 Starting UPS monitor (poll every {POLL_INTERVAL}s)")
+    print(f"Starting UPS monitor (poll every {POLL_INTERVAL}s)")
     asyncio.run(poll_ups())
 
 
