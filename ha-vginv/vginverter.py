@@ -118,7 +118,7 @@ received_data = {}
 mqtt_client = mqtt.Client()
 
 def publish_discovery_configs():
-    print("📡 Publishing MQTT discovery configs...")
+    print("Publishing MQTT discovery configs...")
 
     device_info = {
         "identifiers": ["home-ups"],
@@ -147,7 +147,7 @@ def publish_discovery_configs():
         }
 
         mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True)
-        print(f"✅ Discovery config sent for: {name}")
+        print(f"Discovery config sent for: {name}")
         
     status_payload = {
         "name": "UPS Availability",
@@ -160,7 +160,7 @@ def publish_discovery_configs():
     }
 
     mqtt_client.publish("homeassistant/binary_sensor/home_ups_status/config", json.dumps(status_payload), retain=True)
-    print(f"✅ Discovery config sent for: UPS Availability")
+    print(f"Discovery config sent for: UPS Availability")
 
 def notification_handler(sender, data):
     prefix = bytes(data[:6])
@@ -172,19 +172,19 @@ def notification_handler(sender, data):
         divisor = info["divisor"]
         value = int.from_bytes(value_bytes, "little") / divisor
         received_data[name] = round(value, 2)
-        #print(f"📡 {name}: {value:.2f}")
+        #print(f"{name}: {value:.2f}")
     else:
-        print(f"❓ Unknown data: {data.hex()}")
+        print(f"Unknown data: {data.hex()}")
 
 async def poll_ups():
     client = BleakClient(UPS_ADDRESS)
 
     while True:
         try:
-            print(f"\n🔄 Polling UPS at {time.strftime('%H:%M:%S')}...")
+            print(f"\nPolling UPS at {time.strftime('%H:%M:%S')}...")
 
             if not client.is_connected:
-                print("🔌 Connecting to UPS...")
+                print("Connecting to UPS...")
                 await client.connect()
 
                 if not client.is_connected:
@@ -192,16 +192,16 @@ async def poll_ups():
                     raise RuntimeError("Could not connect to UPS")
 
                 mqtt_client.publish(AVAILABILITY_TOPIC, "online", retain=True)
-                print("✅ Published UPS availability: online")
+                print("Published UPS availability: online")
 
                 await client.start_notify(NOTIFY_UUID, notification_handler)
-                print("✅ BLE notifications enabled")
+                print("BLE notifications enabled")
 
             received_data.clear()
 
             for prefix, request in full_requests.items():
                 name = sensor_requests[prefix]["name"]
-                print(f"📤 Requesting {name}...")
+                print(f"Requesting {name}...")
                 await client.write_gatt_char(WRITE_UUID, request)
                 await asyncio.sleep(0.25)
 
@@ -211,21 +211,21 @@ async def poll_ups():
             for name, value in received_data.items():
                 topic = f"{MQTT_TOPIC_PREFIX}/{name.replace(' ', '_').lower()}"
                 mqtt_client.publish(topic, value)
-                print(f"📤 MQTT: {topic} = {value}")
+                print(f"MQTT: {topic} = {value}")
 
         except Exception as e:
-            print(f"⚠️ Error during polling: {e}")
+            print(f"❌ Error during polling: {e}")
 
             try:
                 if client.is_connected:
                     await client.stop_notify(NOTIFY_UUID)
                     await client.disconnect()
-                    print("🔌 Disconnected from UPS after error")
+                    print("❌ Disconnected from UPS after error")
             except Exception:
                 pass
 
             mqtt_client.publish(AVAILABILITY_TOPIC, "offline", retain=True)
-            print("✅ Published UPS availability: offline")
+            print("Published UPS availability: offline")
             print("⏳ Waiting 10s before retrying...")
             await asyncio.sleep(10)
 
@@ -237,13 +237,13 @@ def main():
 
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
-            print("✅ Connected to MQTT broker")
-            publish_discovery_configs()  # 👈 send discovery when connected
+            print("Connected to MQTT broker")
+            publish_discovery_configs()  # send discovery when connected
         else:
             print(f"❌ MQTT connection failed with code {rc}")
 
     def on_disconnect(client, userdata, rc):
-        print("⚠️ MQTT disconnected. Reconnecting in 5 seconds...")
+        print("❌ MQTT disconnected. Reconnecting in 5 seconds...")
         time.sleep(5)
         try:
             client.reconnect()
@@ -263,7 +263,7 @@ def main():
         return
 
     mqtt_client.loop_start()  # run MQTT network loop in background
-    print(f"🚀 Starting UPS monitor (poll every {POLL_INTERVAL}s)")
+    print(f"Starting UPS monitor (poll every {POLL_INTERVAL}s)")
     asyncio.run(poll_ups())
 
 
